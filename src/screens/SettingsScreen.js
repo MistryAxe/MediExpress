@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { typography, spacing, borderRadius } from '../theme';
+import ProfileSummary from '../components/ProfileSummary';
+import { getEffectiveProfileAndRole } from '../utils/profileSelectors';
 
 const SettingsScreen = () => {
   const { 
@@ -21,26 +24,23 @@ const SettingsScreen = () => {
     textStyles, 
     cardStyles 
   } = useTheme();
+  const { settings } = useAuth();
+
+  const [effective, setEffective] = useState({ role: null, profile: null });
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const result = await getEffectiveProfileAndRole(settings);
+      if (mounted) setEffective(result);
+    })();
+    return () => { mounted = false; };
+  }, [settings]);
 
   const themeOptions = [
-    {
-      key: 'system',
-      label: 'System Default',
-      description: 'Follow device settings',
-      icon: 'phone-portrait-outline',
-    },
-    {
-      key: 'light',
-      label: 'Light Mode',
-      description: 'Always use light theme',
-      icon: 'sunny-outline',
-    },
-    {
-      key: 'dark',
-      label: 'Dark Mode',
-      description: 'Always use dark theme',
-      icon: 'moon-outline',
-    },
+    { key: 'system', label: 'System Default', description: 'Follow device settings', icon: 'phone-portrait-outline' },
+    { key: 'light', label: 'Light Mode', description: 'Always use light theme', icon: 'sunny-outline' },
+    { key: 'dark', label: 'Dark Mode', description: 'Always use dark theme', icon: 'moon-outline' },
   ];
 
   const handleThemeChange = (theme) => {
@@ -48,28 +48,25 @@ const SettingsScreen = () => {
       'Change Theme',
       `Switch to ${theme === 'system' ? 'System Default' : theme === 'light' ? 'Light Mode' : 'Dark Mode'}?`,
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Change',
-          onPress: () => setTheme(theme),
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Change', onPress: () => setTheme(theme) },
       ]
     );
   };
 
-  const SettingCard = ({ title, children }) => (
-    <View style={[cardStyles.container, { marginHorizontal: spacing.base }]}>
-      <Text style={[textStyles.h3, { marginBottom: spacing.lg }]}>{title}</Text>
+  const Section = ({ title, children }) => (
+    <View style={{ marginBottom: spacing['2xl'] }}>
+      <Text style={[textStyles.h3, { marginLeft: spacing.base, marginBottom: spacing.sm }]}>{title}</Text>
       {children}
     </View>
   );
 
+  const SettingCard = ({ children }) => (
+    <View style={[cardStyles.container, { marginHorizontal: spacing.base }]}>{children}</View>
+  );
+
   const ThemeOption = ({ option }) => {
     const isSelected = themePreference === option.key;
-    
     return (
       <TouchableOpacity
         style={[
@@ -78,13 +75,9 @@ const SettingsScreen = () => {
             alignItems: 'center',
             padding: spacing.base,
             borderRadius: borderRadius.md,
-            backgroundColor: isSelected 
-              ? colors.primary.bg 
-              : colors.background.secondary,
+            backgroundColor: isSelected ? colors.primary.bg : colors.background.secondary,
             borderWidth: isSelected ? 2 : 1,
-            borderColor: isSelected 
-              ? colors.primary.main 
-              : colors.border.light,
+            borderColor: isSelected ? colors.primary.main : colors.border.light,
             marginBottom: spacing.sm,
           }
         ]}
@@ -126,20 +119,14 @@ const SettingsScreen = () => {
           </Text>
           <Text style={[
             textStyles.bodySmall,
-            {
-              color: isSelected ? colors.primary.light : colors.text.tertiary,
-            }
+            { color: isSelected ? colors.primary.light : colors.text.tertiary }
           ]}>
             {option.description}
           </Text>
         </View>
         
         {isSelected && (
-          <Ionicons 
-            name="checkmark-circle" 
-            size={24} 
-            color={colors.primary.main} 
-          />
+          <Ionicons name="checkmark-circle" size={24} color={colors.primary.main} />
         )}
       </TouchableOpacity>
     );
@@ -178,10 +165,10 @@ const SettingsScreen = () => {
           }
         ]}
       >
-        <Text style={[textStyles.bodySmall, { textAlign: 'center' }]}>
+        <Text style={[textStyles.bodySmall, { textAlign: 'center' }]}> 
           Current Theme: {themePreference === 'system' ? 'System Default' : themePreference === 'light' ? 'Light Mode' : 'Dark Mode'}
         </Text>
-        <Text style={[textStyles.bodySmall, { textAlign: 'center', marginTop: spacing.xs }]}>
+        <Text style={[textStyles.bodySmall, { textAlign: 'center', marginTop: spacing.xs }]}> 
           Active: {isDark ? 'Dark' : 'Light'} Mode
         </Text>
       </View>
@@ -190,37 +177,33 @@ const SettingsScreen = () => {
 
   return (
     <SafeAreaView style={layoutStyles.safeArea}>
-      <ScrollView
-        contentContainerStyle={{
-          paddingVertical: spacing.xl,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={{ paddingVertical: spacing.xl }} showsVerticalScrollIndicator={false}>
         <View style={{ marginBottom: spacing.xl }}>
-          <Text style={[
-            textStyles.h1,
-            { textAlign: 'center', marginBottom: spacing.sm }
-          ]}>
-            Settings
-          </Text>
-          <Text style={[
-            textStyles.subtitle,
-            { marginHorizontal: spacing.xl }
-          ]}>
-            Customize your MediExpress experience
-          </Text>
+          <Text style={[textStyles.h1, { textAlign: 'center', marginBottom: spacing.sm }]}>Settings</Text>
+          <Text style={[textStyles.subtitle, { marginHorizontal: spacing.xl }]}>Customize your MediExpress experience</Text>
         </View>
 
-        <SettingCard title="Theme Preferences">
-          <Text style={[textStyles.bodySmall, { marginBottom: spacing.lg }]}>
-            Choose how MediExpress looks on your device
-          </Text>
-          {themeOptions.map((option) => (
-            <ThemeOption key={option.key} option={option} />
-          ))}
-        </SettingCard>
+        {/* Profile section */}
+        {effective.role && (
+          <Section title="Profile">
+            <ProfileSummary role={effective.role} profile={effective.profile} />
+          </Section>
+        )}
 
-        <AboutCard />
+        {/* Preferences section */}
+        <Section title="Preferences">
+          <SettingCard>
+            <Text style={[textStyles.bodySmall, { marginBottom: spacing.lg }]}>Choose how MediExpress looks on your device</Text>
+            {themeOptions.map((option) => (
+              <ThemeOption key={option.key} option={option} />
+            ))}
+          </SettingCard>
+        </Section>
+
+        {/* About section */}
+        <Section title="About">
+          <AboutCard />
+        </Section>
       </ScrollView>
     </SafeAreaView>
   );
