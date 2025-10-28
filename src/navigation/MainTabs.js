@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../contexts/ThemeContext';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 const Tabs = createBottomTabNavigator();
 
 const TopFooter = () => {
-  const { colors, spacing } = useTheme();
+  const { colors } = useTheme();
   return (
     <View style={{
       height: 56,
@@ -24,9 +24,9 @@ const TopFooter = () => {
       borderBottomColor: colors.border.light,
     }}>
       <Image
-        source={{ uri: 'https://dummyimage.com/40x40/2563eb/ffffff&text=M' }}
+        source={require('../../assets/logo.png')}
         style={{ width: 40, height: 40, borderRadius: 8 }}
-        resizeMode="cover"
+        resizeMode="contain"
       />
       <TouchableOpacity activeOpacity={0.7}>
         <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
@@ -40,7 +40,7 @@ const TabBarIcon = ({ name, color, size }) => (
 );
 
 export default function MainTabsWithHeaders() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
