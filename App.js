@@ -5,7 +5,6 @@ import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -15,19 +14,9 @@ import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
 import PatientMoreInfoScreen from './src/screens/PatientMoreInfoScreen';
 import DoctorMoreInfoScreen from './src/screens/DoctorMoreInfoScreen';
 import PharmacyMoreInfoScreen from './src/screens/PharmacyMoreInfoScreen';
-import SettingsScreen from './src/screens/SettingsScreen';
+import MainTabsWithHeaders from './src/navigation/MainTabs';
 
 const Stack = createNativeStackNavigator();
-const Tabs = createBottomTabNavigator();
-
-const MainTabs = () => {
-  return (
-    <Tabs.Navigator screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
-      {/** Add more tabs here as needed */}
-    </Tabs.Navigator>
-  );
-};
 
 const RootNavigator = () => {
   const { isDark } = useTheme();
@@ -65,7 +54,7 @@ const RootNavigator = () => {
           </>
         ) : (
           <>
-            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Main" component={MainTabsWithHeaders} />
           </>
         )}
       </Stack.Navigator>
