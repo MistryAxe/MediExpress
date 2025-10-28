@@ -5,6 +5,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AUTH_KEYS } from '../services/authStorage';
 import { spacing, borderRadius } from '../theme';
+import { db } from '../config/firebaseClient';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const ROLES = [
   { key: 'patient', label: 'Patient' },
@@ -26,7 +28,16 @@ const RoleSelectionScreen = () => {
   const onContinue = async () => {
     if (!selected) return Alert.alert('Select a role', 'Please choose one to continue');
 
-    await saveRoleToUser(selected);
+    const updated = await saveRoleToUser(selected);
+
+    try {
+      if (updated?.id) {
+        await updateDoc(doc(db, 'users', updated.id), { role: selected, roleUpdatedAt: Date.now() });
+      }
+    } catch (e) {
+      // non-blocking
+    }
+
     await updateSettings({ role: selected });
 
     Alert.alert('Role saved', `You are registered as ${selected}`);
