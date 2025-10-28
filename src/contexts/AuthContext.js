@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { saveAuthSession, getAuthSession, clearAuthSession, saveUserSettings, getUserSettings } from '../services/authStorage';
 import { useTheme } from './ThemeContext';
+import { auth } from '../config/firebaseClient';
+import { onAuthStateChanged, getIdToken } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -30,6 +32,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => { hydrate(); }, []);
+
+  // Keep in sync with Firebase Auth state
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        const token = await getIdToken(fbUser, true);
+        const minimal = { id: fbUser.uid, name: fbUser.displayName || state.user?.name || '', email: fbUser.email || state.user?.email || '', role: state.user?.role || null };
+        await saveAuthSession({ user: minimal, token });
+        setState((s) => ({ ...s, isLoggedIn: true, user: minimal, token }));
+      } else {
+        await clearAuthSession();
+        setState((s) => ({ ...s, isLoggedIn: false, user: null, token: null }));
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const login = async ({ user, token }) => {
     await saveAuthSession({ user, token });
