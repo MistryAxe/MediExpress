@@ -1,32 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { typography, spacing, borderRadius } from '../theme';
-import ProfileSummary from '../components/ProfileSummary';
+import { spacing } from '../theme';
+import ProfileHeader from '../components/ProfileHeader';
+import { SettingsItem, SettingsSection } from '../components/SettingsList';
 import { getEffectiveProfileAndRole } from '../utils/profileSelectors';
 
-const SettingsScreen = () => {
-  const { 
-    colors, 
-    isDark, 
-    themePreference, 
-    setTheme, 
-    layoutStyles, 
-    textStyles, 
-    cardStyles 
-  } = useTheme();
-  const { settings } = useAuth();
-
+const SettingsScreen = ({ navigation }) => {
+  const { colors, isDark, themePreference, setTheme, layoutStyles, textStyles } = useTheme();
+  const { settings, logout } = useAuth();
   const [effective, setEffective] = useState({ role: null, profile: null });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -34,176 +19,122 @@ const SettingsScreen = () => {
       const result = await getEffectiveProfileAndRole(settings);
       if (mounted) setEffective(result);
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [settings]);
 
-  const themeOptions = [
-    { key: 'system', label: 'System Default', description: 'Follow device settings', icon: 'phone-portrait-outline' },
-    { key: 'light', label: 'Light Mode', description: 'Always use light theme', icon: 'sunny-outline' },
-    { key: 'dark', label: 'Dark Mode', description: 'Always use dark theme', icon: 'moon-outline' },
-  ];
+  const handleEditProfile = () => {
+    const { role } = effective;
+    if (role === 'patient') navigation?.navigate?.('PatientMoreInfo');
+    else if (role === 'doctor') navigation?.navigate?.('DoctorMoreInfo');
+    else if (role === 'pharmacy') navigation?.navigate?.('PharmacyMoreInfo');
+  };
 
   const handleThemeChange = (theme) => {
-    Alert.alert(
-      'Change Theme',
-      `Switch to ${theme === 'system' ? 'System Default' : theme === 'light' ? 'Light Mode' : 'Dark Mode'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Change', onPress: () => setTheme(theme) },
-      ]
-    );
+    Alert.alert('Change Theme', `Switch to ${
+      theme === 'system' ? 'System Default' : theme === 'light' ? 'Light Mode' : 'Dark Mode'
+    }?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Change', onPress: () => setTheme(theme) },
+    ]);
   };
 
-  const Section = ({ title, children }) => (
-    <View style={{ marginBottom: spacing['2xl'] }}>
-      <Text style={[textStyles.h3, { marginLeft: spacing.base, marginBottom: spacing.sm }]}>{title}</Text>
-      {children}
-    </View>
-  );
-
-  const SettingCard = ({ children }) => (
-    <View style={[cardStyles.container, { marginHorizontal: spacing.base }]}>{children}</View>
-  );
-
-  const ThemeOption = ({ option }) => {
-    const isSelected = themePreference === option.key;
-    return (
-      <TouchableOpacity
-        style={[
-          {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: spacing.base,
-            borderRadius: borderRadius.md,
-            backgroundColor: isSelected ? colors.primary.bg : colors.background.secondary,
-            borderWidth: isSelected ? 2 : 1,
-            borderColor: isSelected ? colors.primary.main : colors.border.light,
-            marginBottom: spacing.sm,
-          }
-        ]}
-        onPress={() => handleThemeChange(option.key)}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            {
-              width: 48,
-              height: 48,
-              borderRadius: borderRadius.md,
-              backgroundColor: colors.background.primary,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginRight: spacing.base,
-              borderWidth: 1,
-              borderColor: colors.border.light,
-            }
-          ]}
-        >
-          <Ionicons 
-            name={option.icon} 
-            size={24} 
-            color={isSelected ? colors.primary.main : colors.text.secondary} 
-          />
-        </View>
-        
-        <View style={{ flex: 1 }}>
-          <Text style={[
-            textStyles.body,
-            {
-              fontSize: typography.fontSize.lg,
-              fontWeight: typography.fontWeight.semibold,
-              color: isSelected ? colors.primary.main : colors.text.primary,
-            }
-          ]}>
-            {option.label}
-          </Text>
-          <Text style={[
-            textStyles.bodySmall,
-            { color: isSelected ? colors.primary.light : colors.text.tertiary }
-          ]}>
-            {option.description}
-          </Text>
-        </View>
-        
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color={colors.primary.main} />
-        )}
-      </TouchableOpacity>
-    );
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    ]);
   };
 
-  const AboutCard = () => (
-    <View style={[cardStyles.container, { marginHorizontal: spacing.base }]}>
-      <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <View
-          style={[
-            {
-              width: 80,
-              height: 80,
-              borderRadius: borderRadius.xl,
-              backgroundColor: colors.primary.main,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: spacing.base,
-            }
-          ]}
-        >
-          <Ionicons name="medical" size={40} color={colors.text.inverse} />
-        </View>
-        <Text style={[textStyles.h2, { color: colors.primary.main }]}>MediExpress</Text>
-        <Text style={textStyles.subtitle}>Healthcare Management App</Text>
-      </View>
-      
-      <View
-        style={[
-          {
-            padding: spacing.base,
-            backgroundColor: colors.background.secondary,
-            borderRadius: borderRadius.sm,
-            borderLeftWidth: 4,
-            borderLeftColor: colors.medical.doctor,
-          }
-        ]}
-      >
-        <Text style={[textStyles.bodySmall, { textAlign: 'center' }]}> 
-          Current Theme: {themePreference === 'system' ? 'System Default' : themePreference === 'light' ? 'Light Mode' : 'Dark Mode'}
-        </Text>
-        <Text style={[textStyles.bodySmall, { textAlign: 'center', marginTop: spacing.xs }]}> 
-          Active: {isDark ? 'Dark' : 'Light'} Mode
-        </Text>
-      </View>
-    </View>
-  );
+  const themeLabel = () => {
+    if (themePreference === 'system') return 'System Default';
+    if (themePreference === 'light') return 'Light Mode';
+    return 'Dark Mode';
+  };
 
   return (
-    <SafeAreaView style={layoutStyles.safeArea}>
-      <ScrollView contentContainerStyle={{ paddingVertical: spacing.xl }} showsVerticalScrollIndicator={false}>
-        <View style={{ marginBottom: spacing.xl }}>
-          <Text style={[textStyles.h1, { textAlign: 'center', marginBottom: spacing.sm }]}>Settings</Text>
-          <Text style={[textStyles.subtitle, { marginHorizontal: spacing.xl }]}>Customize your MediExpress experience</Text>
-        </View>
-
-        {/* Profile section */}
+    <SafeAreaView style={[layoutStyles.safeArea, { backgroundColor: colors.background.secondary }]}>
+      <ScrollView contentContainerStyle={{ paddingVertical: spacing.lg }} showsVerticalScrollIndicator={false}>
         {effective.role && (
-          <Section title="Profile">
-            <ProfileSummary role={effective.role} profile={effective.profile} />
-          </Section>
+          <ProfileHeader profile={effective.profile} role={effective.role} onEdit={handleEditProfile} />
         )}
 
-        {/* Preferences section */}
-        <Section title="Preferences">
-          <SettingCard>
-            <Text style={[textStyles.bodySmall, { marginBottom: spacing.lg }]}>Choose how MediExpress looks on your device</Text>
-            {themeOptions.map((option) => (
-              <ThemeOption key={option.key} option={option} />
-            ))}
-          </SettingCard>
-        </Section>
+        <SettingsSection title="Preferences">
+          <SettingsItem
+            icon="color-palette-outline"
+            title="Appearance"
+            subtitle={`Currently using ${themeLabel().toLowerCase()}`}
+            rightText={themeLabel()}
+            onPress={() =>
+              Alert.alert('Choose Theme', 'Select your preferred theme', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'System Default', onPress: () => handleThemeChange('system') },
+                { text: 'Light Mode', onPress: () => handleThemeChange('light') },
+                { text: 'Dark Mode', onPress: () => handleThemeChange('dark') },
+              ])
+            }
+          />
+          <SettingsItem
+            icon="notifications-outline"
+            title="Push Notifications"
+            subtitle="Receive updates and reminders"
+            type="switch"
+            value={notificationsEnabled}
+            onValueChange={setNotificationsEnabled}
+          />
+          <SettingsItem
+            icon="language-outline"
+            title="Language"
+            rightText="English"
+            onPress={() => Alert.alert('Language', 'Coming soon')}
+          />
+        </SettingsSection>
 
-        {/* About section */}
-        <Section title="About">
-          <AboutCard />
-        </Section>
+        <SettingsSection title="Privacy & Security">
+          <SettingsItem
+            icon="lock-closed-outline"
+            title="Privacy Policy"
+            onPress={() => Alert.alert('Privacy Policy', 'Coming soon')}
+          />
+          <SettingsItem
+            icon="shield-checkmark-outline"
+            title="Terms of Service"
+            onPress={() => Alert.alert('Terms of Service', 'Coming soon')}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Support">
+          <SettingsItem
+            icon="help-circle-outline"
+            title="Help Center"
+            onPress={() => Alert.alert('Help Center', 'Coming soon')}
+          />
+          <SettingsItem
+            icon="mail-outline"
+            title="Contact Support"
+            onPress={() => Alert.alert('Contact Support', 'Coming soon')}
+          />
+          <SettingsItem
+            icon="star-outline"
+            title="Rate App"
+            onPress={() => Alert.alert('Rate App', 'Coming soon')}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="About">
+          <SettingsItem icon="information-circle-outline" title="App Version" rightText="1.0.0" type="info" />
+          <SettingsItem
+            icon="medical-outline"
+            title="About MediExpress"
+            subtitle="Healthcare Management App"
+            onPress={() => Alert.alert('MediExpress', 'Healthcare Management App\nVersion 1.0.0')}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Account">
+          <SettingsItem icon="log-out-outline" title="Sign Out" onPress={handleLogout} />
+        </SettingsSection>
       </ScrollView>
     </SafeAreaView>
   );
