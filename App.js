@@ -3,10 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
+import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { I18nManager } from 'react-native';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -32,6 +35,8 @@ const TabIcon = ({ name, color, size }) => <Ionicons name={name} size={size} col
 // Patient tabs
 const PatientTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -55,10 +60,26 @@ const PatientTabs = () => {
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Appointments" component={AppointmentScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ tabBarLabel: t('navigation.home') }}
+      />
+      <Tabs.Screen 
+        name="Appointments" 
+        component={AppointmentScreen} 
+        options={{ tabBarLabel: t('navigation.appointments') }}
+      />
+      <Tabs.Screen 
+        name="Medication" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: t('navigation.medications') }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
@@ -66,6 +87,8 @@ const PatientTabs = () => {
 // Doctor tabs (same for now; diverge later)
 const DoctorTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -89,10 +112,26 @@ const DoctorTabs = () => {
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Appointments" component={AppointmentScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ tabBarLabel: t('navigation.home') }}
+      />
+      <Tabs.Screen 
+        name="Appointments" 
+        component={AppointmentScreen} 
+        options={{ tabBarLabel: t('navigation.appointments') }}
+      />
+      <Tabs.Screen 
+        name="Medication" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: t('navigation.medications') }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
@@ -100,6 +139,8 @@ const DoctorTabs = () => {
 // Pharmacy tabs
 const PharmacyTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -123,10 +164,26 @@ const PharmacyTabs = () => {
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Orders" component={OrdersScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ tabBarLabel: t('navigation.home') }}
+      />
+      <Tabs.Screen 
+        name="Medication" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: t('navigation.medications') }}
+      />
+      <Tabs.Screen 
+        name="Orders" 
+        component={OrdersScreen} 
+        options={{ tabBarLabel: 'Orders' }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
@@ -141,10 +198,17 @@ const MainTabsByRole = ({ role }) => {
 const RootNavigator = () => {
   const { isDark } = useTheme();
   const { isLoading, isLoggedIn, user, settings } = useAuth();
+  const { isRTL } = useLanguage();
 
   const role = user?.role || settings?.role || null;
   const hasRole = !!role;
   const hasProfile = !!settings?.profile || !!user?.profile;
+
+  // Configure RTL if needed
+  React.useEffect(() => {
+    I18nManager.allowRTL(true);
+    I18nManager.forceRTL(isRTL);
+  }, [isRTL]);
 
   const navTheme = isDark ? DarkTheme : DefaultTheme;
 
@@ -218,11 +282,15 @@ const ThemedApp = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <ThemedApp />
-        </AuthProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <ThemedApp />
+            </AuthProvider>
+          </NotificationProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
