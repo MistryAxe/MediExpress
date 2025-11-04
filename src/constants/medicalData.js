@@ -1,0 +1,1 @@
+<medicalData.js content from earlier>
