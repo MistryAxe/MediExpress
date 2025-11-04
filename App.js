@@ -3,12 +3,15 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
+import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { I18nManager } from 'react-native';
 
-// Screens
+// Auth Screens
 import LoginScreen from './src/screens/LoginScreen';
 import RegistrationScreen from './src/screens/RegistrationScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -16,13 +19,17 @@ import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
 import PatientMoreInfoScreen from './src/screens/PatientMoreInfoScreen';
 import DoctorMoreInfoScreen from './src/screens/DoctorMoreInfoScreen';
 import PharmacyMoreInfoScreen from './src/screens/PharmacyMoreInfoScreen';
+
+// Role-specific Dashboard Screens
+import PatientDashboardScreen from './src/screens/PatientDashboardScreen';
+import DoctorDashboardScreen from './src/screens/DoctorDashboardScreen';
+import PharmacyDashboardScreen from './src/screens/PharmacyDashboardScreen';
+
+// Shared Screens
 import SettingsScreen from './src/screens/SettingsScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
 import AppointmentScreen from './src/screens/AppointmentScreen';
 import MedicationScreen from './src/screens/MedicationScreen';
-
-// Placeholder Orders screen for Pharmacy (reuses Medication screen UI for now)
-const OrdersScreen = MedicationScreen;
+import PharmacyOrdersScreen from './src/screens/PharmacyOrdersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -32,6 +39,8 @@ const TabIcon = ({ name, color, size }) => <Ionicons name={name} size={size} col
 // Patient tabs
 const PatientTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -55,23 +64,41 @@ const PatientTabs = () => {
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Appointments" component={AppointmentScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={PatientDashboardScreen} 
+        options={{ tabBarLabel: t('navigation.home') }}
+      />
+      <Tabs.Screen 
+        name="Appointments" 
+        component={AppointmentScreen} 
+        options={{ tabBarLabel: t('navigation.appointments') }}
+      />
+      <Tabs.Screen 
+        name="Medication" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: t('navigation.medications') }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
 
-// Doctor tabs (same for now; diverge later)
+// Doctor tabs
 const DoctorTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.primary.main,
+        tabBarActiveTintColor: colors.medical.doctor,
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
           backgroundColor: colors.background.card,
@@ -80,19 +107,35 @@ const DoctorTabs = () => {
         },
         tabBarIcon: ({ color, size }) => {
           const map = {
-            Dashboard: 'home-outline',
+            Dashboard: 'medical-outline',
             Appointments: 'calendar-outline',
-            Medication: 'medkit-outline',
+            Medication: 'cube-outline',
             Settings: 'settings-outline',
           };
           return <TabIcon name={map[route.name] || 'ellipse-outline'} color={color} size={size} />;
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Appointments" component={AppointmentScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={DoctorDashboardScreen} 
+        options={{ tabBarLabel: 'Practice' }}
+      />
+      <Tabs.Screen 
+        name="Appointments" 
+        component={AppointmentScreen} 
+        options={{ tabBarLabel: 'Patients' }}
+      />
+      <Tabs.Screen 
+        name="Medication" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: 'Bulk Orders' }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
@@ -100,12 +143,14 @@ const DoctorTabs = () => {
 // Pharmacy tabs
 const PharmacyTabs = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.primary.main,
+        tabBarActiveTintColor: colors.medical.pharmacy,
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
           backgroundColor: colors.background.card,
@@ -114,8 +159,8 @@ const PharmacyTabs = () => {
         },
         tabBarIcon: ({ color, size }) => {
           const map = {
-            Dashboard: 'home-outline',
-            Medication: 'medkit-outline',
+            Dashboard: 'storefront-outline',
+            Inventory: 'cube-outline',
             Orders: 'receipt-outline',
             Settings: 'settings-outline',
           };
@@ -123,15 +168,30 @@ const PharmacyTabs = () => {
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Medication" component={MedicationScreen} />
-      <Tabs.Screen name="Orders" component={OrdersScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={PharmacyDashboardScreen} 
+        options={{ tabBarLabel: 'Dashboard' }}
+      />
+      <Tabs.Screen 
+        name="Inventory" 
+        component={MedicationScreen} 
+        options={{ tabBarLabel: 'Inventory' }}
+      />
+      <Tabs.Screen 
+        name="Orders" 
+        component={PharmacyOrdersScreen} 
+        options={{ tabBarLabel: 'Orders' }}
+      />
+      <Tabs.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ tabBarLabel: t('navigation.settings') }}
+      />
     </Tabs.Navigator>
   );
 };
 
-// Pick tabs by role
 const MainTabsByRole = ({ role }) => {
   if (role === 'pharmacy') return <PharmacyTabs />;
   if (role === 'doctor') return <DoctorTabs />;
@@ -141,10 +201,16 @@ const MainTabsByRole = ({ role }) => {
 const RootNavigator = () => {
   const { isDark } = useTheme();
   const { isLoading, isLoggedIn, user, settings } = useAuth();
+  const { isRTL } = useLanguage();
 
   const role = user?.role || settings?.role || null;
   const hasRole = !!role;
   const hasProfile = !!settings?.profile || !!user?.profile;
+
+  React.useEffect(() => {
+    I18nManager.allowRTL(true);
+    I18nManager.forceRTL(isRTL);
+  }, [isRTL]);
 
   const navTheme = isDark ? DarkTheme : DefaultTheme;
 
@@ -155,7 +221,6 @@ const RootNavigator = () => {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          // Enable native-like swipe back gesture + slide transition
           gestureEnabled: true,
           gestureResponseDistance: { horizontal: 300 },
           animation: 'slide_from_right',
@@ -164,13 +229,7 @@ const RootNavigator = () => {
         {!isLoggedIn ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen
-              name="Registration"
-              component={RegistrationScreen}
-              options={{
-                gestureResponseDistance: { horizontal: 250 },
-              }}
-            />
+            <Stack.Screen name="Registration" component={RegistrationScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : !hasRole ? (
@@ -191,12 +250,8 @@ const RootNavigator = () => {
           <>
             <Stack.Screen
               name="Main"
-              // Pass role to choose the correct tabs
               children={() => <MainTabsByRole role={role} />}
-              options={{
-                // Typically disable swipe back from Main
-                gestureEnabled: false,
-              }}
+              options={{ gestureEnabled: false }}
             />
           </>
         )}
@@ -218,11 +273,15 @@ const ThemedApp = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <ThemedApp />
-        </AuthProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <ThemedApp />
+            </AuthProvider>
+          </NotificationProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
